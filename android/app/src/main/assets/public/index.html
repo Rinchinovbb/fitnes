@@ -1,0 +1,879 @@
+<style>
+/* Layout: одна колонка до 560px, нижняя навигация, тренировка открывается поверх на весь экран */
+:root {
+  --bg: #F2F3F0;
+  --surface: #FFFFFF;
+  --ink: #14181F;
+  --muted: #5B6470;
+  --line: #DCDFD9;
+  --accent: #2740F5;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E3E7FF;
+  --ok: #12805C;
+  --danger: #B3261E;
+  --inverse: #14181F;
+  --inverse-ink: #F2F3F0;
+  --font-display: "Fira Sans Condensed", "Arial Narrow", Arial, sans-serif;
+  --font-body: "Fira Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1116; --surface: #171B22; --ink: #ECEFF4; --muted: #9AA3B0; --line: #272D37;
+    --accent: #8C99FF; --accent-ink: #0B0E14; --accent-soft: #202649; --ok: #4CC79A; --danger: #FF8A80;
+    --inverse: #ECEFF4; --inverse-ink: #0E1116; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1116; --surface: #171B22; --ink: #ECEFF4; --muted: #9AA3B0; --line: #272D37;
+  --accent: #8C99FF; --accent-ink: #0B0E14; --accent-soft: #202649; --ok: #4CC79A; --danger: #FF8A80;
+  --inverse: #ECEFF4; --inverse-ink: #0E1116; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: auto; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.45 var(--font-body);
+  padding-inline: 16px; padding-block: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+body.lock { overflow: hidden; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.wrap { max-width: 560px; margin-inline: auto; padding-block: 20px 110px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing: .01em; margin: 0; text-wrap: balance; line-height: 1.05; }
+h1 { font-size: 2.6rem; text-transform: uppercase; }
+h2 { font-size: 1.7rem; text-transform: uppercase; }
+h3 { font-size: 1.35rem; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: .875rem; }
+.eyebrow { font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.num { font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.row > * { min-width: 0; }
+.spread { justify-content: space-between; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.hero { background: var(--inverse); color: var(--inverse-ink); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.hero .eyebrow { color: inherit; opacity: .7; }
+.hero h2 { font-size: 2.2rem; }
+.hero ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: .95rem; }
+.hero li { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid color-mix(in srgb, var(--inverse-ink) 18%, transparent); padding-top: 6px; }
+.hero li span:last-child { opacity: .7; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.btn { border: 0; border-radius: 12px; padding: 14px 18px; font-weight: 600; background: var(--accent); color: var(--accent-ink); min-height: 48px; }
+.btn.block { width: 100%; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); }
+.btn.on-dark { background: var(--inverse-ink); color: var(--inverse); }
+.link { background: none; border: 0; color: var(--accent); font-weight: 600; padding: 10px 0; min-height: 44px; }
+.link.danger { color: var(--danger); }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.stat .num { font-size: 2rem; line-height: 1; display: block; }
+.stat .small { display: block; margin-top: 4px; }
+
+.field { display: flex; gap: 10px; align-items: stretch; }
+.field input, .sel {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 48px; min-width: 0; flex: 1;
+}
+details.card summary { cursor: pointer; font-weight: 600; min-height: 28px; }
+details.card ol { margin: 10px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+
+/* Навигация */
+.nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  display: flex; justify-content: center;
+}
+.nav-in { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; width: 100%; max-width: 560px; }
+.tab { background: none; border: 0; border-radius: 10px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--muted); font-size: .75rem; font-weight: 600; min-height: 52px; }
+.tab svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tab[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+
+/* Программы */
+.prog { display: flex; flex-direction: column; gap: 12px; }
+.prog[data-active="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pill { display: inline-block; font-size: .75rem; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+.days { display: flex; flex-direction: column; gap: 8px; }
+.day { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.day .btn { min-height: 40px; padding: 8px 14px; }
+
+/* Журнал */
+.log { display: flex; flex-direction: column; gap: 10px; }
+.log-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; background: none; border: 0; padding: 0; text-align: left; width: 100%; }
+.log table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.log td { padding: 4px 0; border-top: 1px solid var(--line); vertical-align: top; }
+.log td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.tag { font-size: .7rem; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); }
+
+/* Графики */
+.chart { width: 100%; height: auto; display: block; }
+.ct { fill: var(--muted); font: 500 11px var(--font-body); }
+.cv { fill: var(--ink); font: 700 13px var(--font-display); }
+.grid { stroke: var(--line); stroke-width: 1; }
+.bar { fill: var(--accent); }
+.bar.zero { fill: var(--line); }
+.tgt { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 4 3; opacity: .5; }
+.ln { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.dot { fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }
+.dot.last { fill: var(--accent); }
+
+
+/* Конструктор планов */
+.txt { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 48px; min-width: 0; }
+.txt:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.mini { display: flex; flex-direction: column; gap: 4px; font-size: .75rem; color: var(--muted); font-weight: 600; min-width: 0; }
+.mini .txt { color: var(--ink); font-size: 1rem; font-weight: 400; }
+.tri { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ed-ex { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.chip { border: 1px solid var(--line); border-radius: 99px; padding: 8px 14px; min-height: 44px; background: none; font-weight: 600; }
+.chip[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.icon-btn { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: none; font-size: 1.1rem; display: grid; place-items: center; }
+.icon-btn:disabled { opacity: .35; cursor: default; }
+.grow { flex: 1; }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Тренировка */
+#workout { position: fixed; inset: 0; z-index: 20; background: var(--bg); overflow-y: auto; overscroll-behavior: contain; }
+.wk-head {
+  position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line);
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+}
+.wk-head-in, .wk-in { max-width: 560px; margin-inline: auto; }
+.wk-in { padding: 16px 16px 24px; display: flex; flex-direction: column; gap: 14px; }
+.wk-head-in { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.clock { font-size: 1.6rem; }
+.ex { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.ex-top { display: flex; flex-direction: column; gap: 2px; }
+.prev { font-size: .85rem; color: var(--muted); }
+.sets { display: flex; flex-direction: column; gap: 8px; }
+.set { display: grid; grid-template-columns: 28px 1fr 1fr 52px; gap: 8px; align-items: center; }
+.set .sn { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; color: var(--muted); text-align: center; }
+.set:not(:has(.fld-w)) { grid-template-columns: 28px 1fr 52px; }
+.fld { display: flex; align-items: center; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding-right: 10px; min-width: 0; }
+.fld input { width: 100%; min-width: 0; border: 0; background: transparent; padding: 12px 10px; font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.fld input:focus-visible { outline: none; }
+.fld:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.fld i { font-style: normal; font-size: .8rem; color: var(--muted); }
+.chk { width: 52px; height: 48px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); display: grid; place-items: center; }
+.chk svg { width: 24px; height: 24px; stroke: var(--muted); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.set.done .chk { background: var(--ok); border-color: var(--ok); }
+.set.done .chk svg { stroke: var(--surface); }
+.set.done .fld { opacity: .6; }
+.wk-foot { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+
+#rest {
+  position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 30;
+  max-width: 536px; margin-inline: auto;
+  background: var(--inverse); color: var(--inverse-ink); border-radius: 16px; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.28);
+}
+#rest .big { font-size: 2.6rem; line-height: 1; }
+.meter { height: 6px; background: color-mix(in srgb, var(--inverse-ink) 22%, transparent); border-radius: 99px; overflow: hidden; }
+.meter > div { height: 100%; width: 100%; background: var(--inverse-ink); transform-origin: left; }
+#rest .btn { background: color-mix(in srgb, var(--inverse-ink) 16%, transparent); color: var(--inverse-ink); min-height: 44px; padding: 8px 14px; }
+#rest.over .meter > div { background: var(--ok); }
+
+#toast {
+  position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 50;
+  background: var(--inverse); color: var(--inverse-ink); padding: 10px 16px; border-radius: 99px; font-weight: 600; font-size: .9rem; max-width: 90vw; text-align: center;
+}
+.empty { text-align: left; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (prefers-reduced-motion: no-preference) {
+  .meter > div { transition: transform .25s linear; }
+}
+@media (max-width: 380px) {
+  h1 { font-size: 2.2rem; }
+  .stats { gap: 6px; }
+  .stat { padding: 10px 8px; }
+}
+</style>
+
+<style>@font-face{font-family:"Fira Sans";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/fira-sans-cyrillic-400-normal.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:"Fira Sans";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/fira-sans-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:"Fira Sans";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/fira-sans-cyrillic-500-normal.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:"Fira Sans";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/fira-sans-latin-500-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:"Fira Sans";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/fira-sans-cyrillic-600-normal.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:"Fira Sans";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/fira-sans-latin-600-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:"Fira Sans Condensed";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/fira-sans-condensed-cyrillic-600-normal.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:"Fira Sans Condensed";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/fira-sans-condensed-latin-600-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}@font-face{font-family:"Fira Sans Condensed";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/fira-sans-condensed-cyrillic-700-normal.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}@font-face{font-family:"Fira Sans Condensed";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/fira-sans-condensed-latin-700-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+html{padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div id="workout" hidden></div>
+<nav class="nav" id="nav" aria-label="Разделы">
+  <div class="nav-in">
+    <button class="tab" data-act="tab" data-t="today"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>Сегодня</button>
+    <button class="tab" data-act="tab" data-t="programs"><svg viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg>Программы</button>
+    <button class="tab" data-act="tab" data-t="history"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Журнал</button>
+    <button class="tab" data-act="tab" data-t="progress"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l4-5 3 3 5-6"/></svg>Прогресс</button>
+  </div>
+</nav>
+<div id="toast" hidden role="status"></div>
+
+<script>
+(function () {
+  var KEY = 'fit-trainer-v1';
+  var PROGRAMS = [
+    { id: 'full', name: 'Всё тело', level: 'Новичок', per: 3,
+      about: 'Три тренировки в неделю через день. В каждой работают все основные группы мышц.',
+      days: [
+        { name: 'День A', focus: 'Ноги и грудь', ex: [
+          { n: 'Приседания с гантелью', s: 3, r: '10', rest: 90, w: 1 },
+          { n: 'Жим гантелей лёжа', s: 3, r: '8–10', rest: 90, w: 1 },
+          { n: 'Тяга гантели в наклоне', s: 3, r: '10', rest: 75, w: 1 },
+          { n: 'Жим гантелей сидя', s: 2, r: '10', rest: 75, w: 1 },
+          { n: 'Планка', s: 3, r: '40', u: 'сек', rest: 45, w: 0 } ] },
+        { name: 'День B', focus: 'Спина и ягодицы', ex: [
+          { n: 'Румынская тяга с гантелями', s: 3, r: '10', rest: 90, w: 1 },
+          { n: 'Тяга верхнего блока', s: 3, r: '10', rest: 75, w: 1 },
+          { n: 'Выпады назад', s: 3, r: '10', rest: 75, w: 1 },
+          { n: 'Отжимания', s: 3, r: '8–12', rest: 60, w: 0 },
+          { n: 'Скручивания', s: 3, r: '15', rest: 45, w: 0 } ] },
+        { name: 'День C', focus: 'Ноги и плечи', ex: [
+          { n: 'Гоблет-приседания', s: 3, r: '12', rest: 90, w: 1 },
+          { n: 'Ягодичный мостик', s: 3, r: '12', rest: 60, w: 1 },
+          { n: 'Тяга гантели в наклоне', s: 3, r: '10', rest: 75, w: 1 },
+          { n: 'Подъём гантелей в стороны', s: 3, r: '12', rest: 60, w: 1 },
+          { n: 'Боковая планка', s: 2, r: '30', u: 'сек', rest: 45, w: 0 } ] }
+      ] },
+    { id: 'split', name: 'Верх и низ', level: 'Средний', per: 4,
+      about: 'Четыре тренировки в неделю: два дня на верх тела и два на низ.',
+      days: [
+        { name: 'Верх 1', focus: 'Грудь и спина', ex: [
+          { n: 'Жим штанги лёжа', s: 4, r: '6–8', rest: 120, w: 1 },
+          { n: 'Тяга штанги в наклоне', s: 4, r: '8', rest: 120, w: 1 },
+          { n: 'Жим гантелей на наклонной', s: 3, r: '10', rest: 90, w: 1 },
+          { n: 'Тяга верхнего блока', s: 3, r: '10', rest: 90, w: 1 },
+          { n: 'Подъём штанги на бицепс', s: 3, r: '12', rest: 60, w: 1 } ] },
+        { name: 'Низ 1', focus: 'Квадрицепс', ex: [
+          { n: 'Приседания со штангой', s: 4, r: '6–8', rest: 150, w: 1 },
+          { n: 'Жим ногами', s: 3, r: '10', rest: 90, w: 1 },
+          { n: 'Выпады с гантелями', s: 3, r: '10', rest: 90, w: 1 },
+          { n: 'Подъём на носки стоя', s: 4, r: '15', rest: 60, w: 1 },
+          { n: 'Планка', s: 3, r: '60', u: 'сек', rest: 45, w: 0 } ] },
+        { name: 'Верх 2', focus: 'Плечи и руки', ex: [
+          { n: 'Жим штанги стоя', s: 4, r: '6–8', rest: 120, w: 1 },
+          { n: 'Подтягивания', s: 4, r: '6–10', rest: 120, w: 0 },
+          { n: 'Подъём гантелей в стороны', s: 3, r: '12', rest: 60, w: 1 },
+          { n: 'Французский жим', s: 3, r: '10', rest: 75, w: 1 },
+          { n: 'Молотки с гантелями', s: 3, r: '12', rest: 60, w: 1 } ] },
+        { name: 'Низ 2', focus: 'Задняя поверхность', ex: [
+          { n: 'Становая тяга', s: 4, r: '5', rest: 180, w: 1 },
+          { n: 'Румынская тяга со штангой', s: 3, r: '8', rest: 120, w: 1 },
+          { n: 'Ягодичный мостик со штангой', s: 3, r: '10', rest: 90, w: 1 },
+          { n: 'Сгибание ног лёжа', s: 3, r: '12', rest: 60, w: 1 },
+          { n: 'Скручивания', s: 3, r: '20', rest: 45, w: 0 } ] }
+      ] },
+    { id: 'home', name: 'Дома без инвентаря', level: 'Любой', per: 3,
+      about: 'Только вес тела. Подойдёт для дома, поездок и дней без зала.',
+      days: [
+        { name: 'Круг A', focus: 'Всё тело', ex: [
+          { n: 'Приседания', s: 4, r: '15', rest: 45, w: 0 },
+          { n: 'Отжимания', s: 4, r: '10', rest: 45, w: 0 },
+          { n: 'Выпады', s: 3, r: '12', rest: 45, w: 0 },
+          { n: 'Ягодичный мостик', s: 3, r: '15', rest: 45, w: 0 },
+          { n: 'Планка', s: 3, r: '45', u: 'сек', rest: 30, w: 0 } ] },
+        { name: 'Круг B', focus: 'Всё тело', ex: [
+          { n: 'Болгарские приседания', s: 3, r: '10', rest: 60, w: 0 },
+          { n: 'Отжимания узким хватом', s: 3, r: '10', rest: 45, w: 0 },
+          { n: 'Подъём ног лёжа', s: 3, r: '12', rest: 45, w: 0 },
+          { n: 'Скалолаз', s: 3, r: '30', u: 'сек', rest: 30, w: 0 },
+          { n: 'Боковая планка', s: 2, r: '30', u: 'сек', rest: 30, w: 0 } ] }
+      ] }
+  ];
+
+
+  var LIB = [
+    { n: 'Приседания со штангой', g: 'Ноги', w: 1 }, { n: 'Гоблет-приседания', g: 'Ноги', w: 1 }, { n: 'Жим ногами', g: 'Ноги', w: 1 },
+    { n: 'Выпады с гантелями', g: 'Ноги', w: 1 }, { n: 'Приседания', g: 'Ноги', w: 0, home: 1 }, { n: 'Выпады', g: 'Ноги', w: 0, home: 1 },
+    { n: 'Болгарские приседания', g: 'Ноги', w: 0, home: 1 }, { n: 'Подъём на носки стоя', g: 'Ноги', w: 1 },
+    { n: 'Румынская тяга со штангой', g: 'Ягодицы', w: 1 }, { n: 'Становая тяга', g: 'Ягодицы', w: 1 }, { n: 'Ягодичный мостик', g: 'Ягодицы', w: 0, home: 1 },
+    { n: 'Ягодичный мостик со штангой', g: 'Ягодицы', w: 1 }, { n: 'Сгибание ног лёжа', g: 'Ягодицы', w: 1 },
+    { n: 'Жим штанги лёжа', g: 'Грудь', w: 1 }, { n: 'Жим гантелей лёжа', g: 'Грудь', w: 1 }, { n: 'Жим гантелей на наклонной', g: 'Грудь', w: 1 },
+    { n: 'Разведение гантелей лёжа', g: 'Грудь', w: 1 }, { n: 'Отжимания', g: 'Грудь', w: 0, home: 1 }, { n: 'Отжимания узким хватом', g: 'Грудь', w: 0, home: 1 },
+    { n: 'Тяга штанги в наклоне', g: 'Спина', w: 1 }, { n: 'Тяга гантели в наклоне', g: 'Спина', w: 1 }, { n: 'Тяга верхнего блока', g: 'Спина', w: 1 },
+    { n: 'Тяга нижнего блока', g: 'Спина', w: 1 }, { n: 'Подтягивания', g: 'Спина', w: 0 }, { n: 'Супермен', g: 'Спина', w: 0, home: 1 },
+    { n: 'Жим штанги стоя', g: 'Плечи', w: 1 }, { n: 'Жим гантелей сидя', g: 'Плечи', w: 1 }, { n: 'Подъём гантелей в стороны', g: 'Плечи', w: 1 },
+    { n: 'Отжимания «пайк»', g: 'Плечи', w: 0, home: 1 },
+    { n: 'Подъём штанги на бицепс', g: 'Бицепс', w: 1 }, { n: 'Молотки с гантелями', g: 'Бицепс', w: 1 },
+    { n: 'Французский жим', g: 'Трицепс', w: 1 }, { n: 'Разгибание рук на блоке', g: 'Трицепс', w: 1 },
+    { n: 'Обратные отжимания от стула', g: 'Трицепс', w: 0, home: 1 }, { n: 'Алмазные отжимания', g: 'Трицепс', w: 0, home: 1 },
+    { n: 'Планка', g: 'Кор', w: 0, home: 1, u: 'сек' }, { n: 'Боковая планка', g: 'Кор', w: 0, home: 1, u: 'сек' }, { n: 'Скалолаз', g: 'Кор', w: 0, home: 1, u: 'сек' },
+    { n: 'Скручивания', g: 'Кор', w: 0, home: 1 }, { n: 'Подъём ног лёжа', g: 'Кор', w: 0, home: 1 }
+  ];
+  var FALLBACK = { 'Бицепс': 'Спина', 'Трицепс': 'Грудь', 'Ягодицы': 'Ноги', 'Плечи': 'Грудь' };
+  var GOALS = {
+    mass: { t: 'Набор массы', s: 3, r: '8–12', rest: 75 },
+    strength: { t: 'Сила', s: 4, r: '4–6', rest: 150 },
+    fat: { t: 'Похудение', s: 3, r: '12–15', rest: 45 },
+    tone: { t: 'Тонус', s: 3, r: '12', rest: 60 }
+  };
+  var TPL = {
+    2: [['День A', 'Всё тело', ['Ноги', 'Грудь', 'Спина', 'Плечи', 'Кор']], ['День B', 'Всё тело', ['Ягодицы', 'Спина', 'Грудь', 'Плечи', 'Кор']]],
+    3: [['День A', 'Всё тело', ['Ноги', 'Грудь', 'Спина', 'Плечи', 'Кор']], ['День B', 'Всё тело', ['Ягодицы', 'Спина', 'Грудь', 'Трицепс', 'Кор']], ['День C', 'Всё тело', ['Ноги', 'Плечи', 'Спина', 'Бицепс', 'Кор']]],
+    4: [['Верх 1', 'Грудь и спина', ['Грудь', 'Спина', 'Плечи', 'Бицепс', 'Трицепс']], ['Низ 1', 'Ноги и ягодицы', ['Ноги', 'Ягодицы', 'Ноги', 'Ягодицы', 'Кор']],
+        ['Верх 2', 'Спина и грудь', ['Спина', 'Грудь', 'Плечи', 'Трицепс', 'Бицепс']], ['Низ 2', 'Ягодицы и ноги', ['Ягодицы', 'Ноги', 'Ягодицы', 'Ноги', 'Кор']]],
+    5: [['Грудь и трицепс', 'Толчок', ['Грудь', 'Грудь', 'Плечи', 'Трицепс', 'Кор']], ['Спина и бицепс', 'Тяга', ['Спина', 'Спина', 'Бицепс', 'Бицепс', 'Кор']],
+        ['Ноги', 'Квадрицепс и ягодицы', ['Ноги', 'Ноги', 'Ягодицы', 'Ягодицы', 'Кор']], ['Плечи и руки', 'Плечи, бицепс, трицепс', ['Плечи', 'Плечи', 'Бицепс', 'Трицепс', 'Кор']],
+        ['Всё тело', 'Лёгкая тренировка', ['Ноги', 'Грудь', 'Спина', 'Ягодицы', 'Кор']]]
+  };
+  function pickEx(group, di, si, used, home) {
+    var pool = LIB.filter(function (e) { return !home || e.home; });
+    var chain = [group, FALLBACK[group], 'Ноги', 'Кор'];
+    for (var c = 0; c < chain.length; c++) {
+      if (!chain[c]) continue;
+      var g = chain[c];
+      var cand = pool.filter(function (e) { return e.g === g && !used[e.n]; });
+      if (cand.length) { var pick = cand[(di + si) % cand.length]; used[pick.n] = 1; return pick; }
+    }
+    return pool[(di + si) % pool.length];
+  }
+  function genPlan(g) {
+    var T = GOALS[g.goal] || GOALS.mass, home = g.place === 'home', pro = g.level === 'pro', days = [];
+    TPL[g.days].forEach(function (d, di) {
+      var used = {}, slots = d[2].slice();
+      if (pro) slots.splice(slots.length - 1, 0, d[2][1]);
+      days.push({ name: d[0], focus: d[1], ex: slots.map(function (grp, si) {
+        var e = pickEx(grp, di, si, used, home), timed = e.u === 'сек';
+        var sets = Math.max(2, T.s - (pro ? 0 : 1)), reps = T.r, rest = T.rest;
+        if (timed) { reps = g.goal === 'fat' ? '45' : '40'; sets = 3; rest = 45; }
+        else if (e.g === 'Кор') { reps = '15'; sets = 3; rest = 45; }
+        else if (g.goal === 'strength' && (e.g === 'Бицепс' || e.g === 'Трицепс')) { reps = '8–10'; sets = 3; rest = 90; }
+        else if (home && !e.w) { reps = g.goal === 'strength' ? '8–12' : g.goal === 'mass' ? '10–15' : T.r; }
+        var out = { n: e.n, s: sets, r: reps, rest: rest, w: e.w ? 1 : 0 };
+        if (timed) out.u = 'сек';
+        return out;
+      }) });
+    });
+    var lvl = pro ? 'Опытный' : 'Новичок';
+    return { id: null, custom: true, name: T.t + ', ' + g.days + ' дн. в неделю' + (home ? ', дома' : ''), level: 'Свой', per: g.days,
+      about: 'Составлено по твоим ответам: ' + T.t.toLowerCase() + ', ' + lvl.toLowerCase() + ', ' + (home ? 'дома' : 'в зале') + '.', days: days };
+  }
+  function toEditor(p, id) {
+    return { id: id, name: p.name, about: p.about || '', days: p.days.map(function (d) {
+      return { name: d.name, focus: d.focus || '', ex: d.ex.map(function (e) { return { n: e.n, s: String(e.s), r: String(e.r), rest: String(e.rest), w: e.w ? 1 : 0, u: e.u === 'сек' ? 'сек' : '' }; }) };
+    }) };
+  }
+  function libFind(name) { var q = String(name).trim().toLowerCase(); for (var i = 0; i < LIB.length; i++) if (LIB[i].n.toLowerCase() === q) return LIB[i]; return null; }
+  function clampN(v, a, b, d) { var n = parseInt(v, 10); if (!isFinite(n)) n = d; return Math.min(b, Math.max(a, n)); }
+
+  var state = { tab: 'today', program: 'full', dayIdx: {}, logs: [], weights: [], target: 3, draft: null, open: null, custom: [], editor: null, gen: { goal: 'mass', level: 'new', days: 3, place: 'gym' } };
+  function load() {
+    try { var r = localStorage.getItem(KEY); if (r) { var o = JSON.parse(r); for (var k in o) state[k] = o[k]; } } catch (e) {}
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  load();
+  state.open = null;
+
+  function $(s, el) { return (el || document).querySelector(s); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function num(v) { var n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; }
+  function fmt(n) { return (Math.round(n * 10) / 10).toLocaleString('ru-RU'); }
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function dateKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function parseKey(k) { var p = k.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function longDate(k) { return parseKey(k).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long' }); }
+  function shortDate(k) { return parseKey(k).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }); }
+  function monday(d) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); var wd = (x.getDay() + 6) % 7; x.setDate(x.getDate() - wd); return x; }
+  function allProgs() { return PROGRAMS.concat(state.custom); }
+  function prog(id) { var a = allProgs(); for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i]; return PROGRAMS[0]; }
+  function firstNum(s) { var m = String(s).match(/\d+/); return m ? m[0] : ''; }
+  function clock(ms) { var s = Math.max(0, Math.round(ms / 1000)); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); }
+  function logVolume(l) { var v = 0; l.ex.forEach(function (e) { e.sets.forEach(function (s) { v += s.w * s.r; }); }); return v; }
+  function logSets(l) { var n = 0; l.ex.forEach(function (e) { n += e.sets.length; }); return n; }
+  function sortedLogs() { return state.logs.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id; }); }
+
+  /* ---------- Иконки ---------- */
+  var CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+  /* ---------- Графики ---------- */
+  function barChart(data, target) {
+    var W = 320, H = 150, L = 8, B = 24, T = 18, n = data.length;
+    var max = Math.max(target, 1); data.forEach(function (d) { if (d.v > max) max = d.v; });
+    var bw = (W - L * 2) / n, h = H - B - T, out = '';
+    out += '<line class="grid" x1="' + L + '" x2="' + (W - L) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/>';
+    var ty = H - B - (target / max) * h;
+    out += '<line class="tgt" x1="' + L + '" x2="' + (W - L) + '" y1="' + ty + '" y2="' + ty + '"/>';
+    data.forEach(function (d, i) {
+      var bh = (d.v / max) * h, x = L + i * bw + bw * 0.18, w = bw * 0.64;
+      out += '<rect class="bar' + (d.v ? '' : ' zero') + '" x="' + x + '" y="' + (H - B - Math.max(bh, d.v ? 0 : 2)) + '" width="' + w + '" height="' + Math.max(bh, d.v ? 0 : 2) + '" rx="3"/>';
+      if (d.v) out += '<text class="cv" x="' + (x + w / 2) + '" y="' + (H - B - bh - 4) + '" text-anchor="middle">' + d.v + '</text>';
+      out += '<text class="ct" x="' + (x + w / 2) + '" y="' + (H - 6) + '" text-anchor="middle">' + esc(d.l) + '</text>';
+    });
+    return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Тренировок по неделям">' + out + '</svg>';
+  }
+  function lineChart(pts, unit, label) {
+    var W = 320, H = 160, L = 38, R = 14, T = 20, B = 26;
+    if (pts.length < 2) return '<p class="muted small">Нужно хотя бы две записи, чтобы построить график.</p>';
+    var min = Infinity, max = -Infinity; pts.forEach(function (p) { if (p.v < min) min = p.v; if (p.v > max) max = p.v; });
+    if (max - min < 1) { max += 1; min -= 1; }
+    var span = max - min; min -= span * 0.1; max += span * 0.1; span = max - min;
+    var X = function (i) { return L + (i / (pts.length - 1)) * (W - L - R); };
+    var Y = function (v) { return T + (1 - (v - min) / span) * (H - T - B); };
+    var out = '';
+    [min, (min + max) / 2, max].forEach(function (g) {
+      out += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(g) + '" y2="' + Y(g) + '"/>';
+      out += '<text class="ct" x="' + (L - 6) + '" y="' + (Y(g) + 4) + '" text-anchor="end">' + fmt(g) + '</text>';
+    });
+    out += '<polyline class="ln" points="' + pts.map(function (p, i) { return X(i) + ',' + Y(p.v); }).join(' ') + '"/>';
+    pts.forEach(function (p, i) { out += '<circle class="dot' + (i === pts.length - 1 ? ' last' : '') + '" cx="' + X(i) + '" cy="' + Y(p.v) + '" r="4"/>'; });
+    var last = pts[pts.length - 1];
+    out += '<text class="cv" x="' + (W - R) + '" y="' + (Y(last.v) - 9) + '" text-anchor="end">' + fmt(last.v) + ' ' + unit + '</text>';
+    out += '<text class="ct" x="' + L + '" y="' + (H - 6) + '" text-anchor="start">' + esc(pts[0].l) + '</text>';
+    out += '<text class="ct" x="' + (W - R) + '" y="' + (H - 6) + '" text-anchor="end">' + esc(last.l) + '</text>';
+    return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(label) + '">' + out + '</svg>';
+  }
+
+  /* ---------- Вкладки ---------- */
+  function weekCount() {
+    var m = dateKey(monday(new Date()));
+    return state.logs.filter(function (l) { return l.date >= m; }).length;
+  }
+  function viewToday() {
+    var p = prog(state.program), di = (state.dayIdx[p.id] || 0) % p.days.length, day = p.days[di];
+    var wk = weekCount(), tgt = state.target;
+    var h = '<div class="stack">';
+    h += '<div><p class="eyebrow">' + esc(new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })) + '</p><h1>Тренировка</h1></div>';
+    if (state.draft) {
+      var dp = prog(state.draft.prog), dd = dp.days[state.draft.day];
+      h += '<div class="hero"><p class="eyebrow">Не закончена</p><h2>' + esc(dd.name) + ' · ' + esc(dd.focus) + '</h2><p>Тренировка идёт с ' + new Date(state.draft.start).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) + '. Продолжай с того места, где остановился.</p><button class="btn on-dark block" data-act="resume">Продолжить</button></div>';
+    } else {
+      h += '<div class="hero"><p class="eyebrow">' + esc(p.name) + ' · следующая</p><h2>' + esc(day.name) + ' · ' + esc(day.focus) + '</h2><ul>' +
+        day.ex.map(function (e) { return '<li><span>' + esc(e.n) + '</span><span>' + e.s + ' × ' + esc(e.r) + (e.u ? ' ' + e.u : '') + '</span></li>'; }).join('') +
+        '</ul><button class="btn on-dark block" data-act="start" data-p="' + p.id + '" data-d="' + di + '">Начать тренировку</button></div>';
+    }
+    h += '<div class="stats">' +
+      '<div class="stat"><span class="num">' + wk + '<span class="muted"> / ' + tgt + '</span></span><span class="small muted">на этой неделе</span></div>' +
+      '<div class="stat"><span class="num">' + state.logs.length + '</span><span class="small muted">всего тренировок</span></div>' +
+      '<div class="stat"><span class="num">' + (state.weights.length ? fmt(state.weights[state.weights.length - 1].v) : '—') + '</span><span class="small muted">вес, кг</span></div></div>';
+    h += '<div class="card stack"><div class="row spread"><h3>Вес тела</h3><span class="small muted">' + (state.weights.length ? 'запись от ' + shortDate(state.weights[state.weights.length - 1].d) : 'записей пока нет') + '</span></div>' +
+      '<div class="field"><label class="sr" for="bw">Вес в килограммах</label><input id="bw" inputmode="decimal" placeholder="Например, 72,5"><button class="btn" data-act="saveWeight">Записать</button></div></div>';
+    h += '<div class="card stack"><div class="row spread"><h3>Цель на неделю</h3><div class="row">' +
+      [2, 3, 4, 5].map(function (n) { return '<button class="btn ' + (n === tgt ? '' : 'ghost') + '" style="min-height:44px;padding:8px 14px" data-act="target" data-n="' + n + '" aria-pressed="' + (n === tgt) + '">' + n + '</button>'; }).join('') +
+      '</div></div><p class="small muted">Сколько тренировок в неделю ты планируешь. Эта цифра показана на графике прогресса.</p></div>';
+    h += '<details class="card"><summary>Как поставить на телефон</summary><ol class="small">' +
+      '<li>Открой эту страницу в Safari (iPhone) или Chrome (Android).</li>' +
+      '<li>iPhone: нажми «Поделиться», затем «На экран “Домой”». Android: меню ⋮, затем «Добавить на главный экран».</li>' +
+      '<li>Иконка появится рядом с остальными приложениями.</li>' +
+      '<li>Данные хранятся в браузере этого телефона. Не очищай данные сайтов, иначе журнал пропадёт.</li></ol></details>';
+    return h + '</div>';
+  }
+
+  function viewPrograms() {
+    var h = '<div class="stack"><div><p class="eyebrow">Выбери план</p><h1>Программы</h1></div>';
+    if (state.editor) {
+      h += '<div class="card stack"><h3>Незаконченный план</h3><p class="muted">«' + esc(state.editor.name || 'Без названия') + '»</p><div class="row"><button class="btn" data-act="resumeEd">Продолжить</button><button class="btn danger" data-act="dropEd">Удалить черновик</button></div></div>';
+    }
+    h += '<div class="card stack"><h3>Свой план</h3><p class="muted small">Ответь на четыре вопроса, и приложение составит план под твою цель. Его можно изменить: поменять упражнения, подходы, повторы и отдых. Или собери план вручную с нуля.</p><div class="row"><button class="btn" data-act="gen">Составить план</button><button class="btn ghost" data-act="newPlan">Создать вручную</button></div></div>';
+    state.custom.concat(PROGRAMS).forEach(function (p) {
+      var active = p.id === state.program, next = (state.dayIdx[p.id] || 0) % p.days.length;
+      h += '<section class="card prog" data-active="' + active + '"><div class="row spread"><h2>' + esc(p.name) + '</h2><span class="pill">' + esc(p.custom ? 'Свой' : p.level) + '</span></div>' +
+        '<p class="muted">' + esc(p.about) + '</p><p class="small muted">Тренировок в неделю: ' + p.per + ' · дней в цикле: ' + p.days.length + '</p><div class="days">';
+      p.days.forEach(function (d, i) {
+        h += '<div class="day"><div style="min-width:0"><strong>' + esc(d.name) + '</strong>' + (d.focus ? ' <span class="muted">· ' + esc(d.focus) + '</span>' : '') +
+          (active && i === next ? ' <span class="pill">дальше</span>' : '') + '<div class="small muted">' + d.ex.length + ' упражнений</div></div>' +
+          '<button class="btn ghost" data-act="start" data-p="' + esc(p.id) + '" data-d="' + i + '">Начать</button></div>';
+      });
+      h += '</div>' + (active ? '<p class="small" style="color:var(--accent);font-weight:600">Сейчас активна</p>' : '<button class="btn block ghost" data-act="pick" data-p="' + esc(p.id) + '">Сделать активной</button>');
+      if (p.custom) h += '<div class="row"><button class="btn ghost" data-act="editPlan" data-p="' + esc(p.id) + '">Изменить</button><button class="btn danger" data-act="delPlan" data-p="' + esc(p.id) + '">Удалить</button></div>';
+      else h += '<button class="link" data-act="copyPlan" data-p="' + esc(p.id) + '" style="align-self:flex-start">Копировать и изменить</button>';
+      h += '</section>';
+    });
+    return h + '</div>';
+  }
+
+  function seg(key, opts, label) {
+    return '<div class="opts" role="group" aria-label="' + esc(label) + '">' + opts.map(function (o) {
+      return '<button class="chip" data-act="genSet" data-k="' + key + '" data-v="' + o[0] + '" aria-pressed="' + (String(state.gen[key]) === String(o[0])) + '">' + esc(o[1]) + '</button>';
+    }).join('') + '</div>';
+  }
+  function viewGenerate() {
+    var h = '<div class="stack"><div><p class="eyebrow">Четыре вопроса</p><h1>Составить план</h1></div>';
+    h += '<div class="card stack"><h3>Цель</h3>' + seg('goal', [['mass', 'Набор массы'], ['strength', 'Сила'], ['fat', 'Похудение'], ['tone', 'Тонус']], 'Цель') + '</div>';
+    h += '<div class="card stack"><h3>Уровень</h3>' + seg('level', [['new', 'Новичок'], ['pro', 'Занимаюсь давно']], 'Уровень') + '</div>';
+    h += '<div class="card stack"><h3>Тренировок в неделю</h3>' + seg('days', [[2, '2'], [3, '3'], [4, '4'], [5, '5']], 'Тренировок в неделю') + '</div>';
+    h += '<div class="card stack"><h3>Где занимаешься</h3>' + seg('place', [['gym', 'В зале'], ['home', 'Дома без инвентаря']], 'Где занимаешься') + '</div>';
+    h += '<button class="btn block" data-act="genRun">Составить план</button><button class="btn ghost block" data-act="tab" data-t="programs">Назад</button></div>';
+    return h;
+  }
+
+  function numField(label, id, ed, d, e, val, mode) {
+    return '<label class="mini" for="' + id + '">' + label + '<input id="' + id + '" class="txt" type="text" inputmode="' + mode + '" data-ed="' + ed + '" data-d="' + d + '" data-e="' + e + '" value="' + esc(val) + '"></label>';
+  }
+  function viewEditor() {
+    var E = state.editor;
+    var h = '<div class="stack"><div><p class="eyebrow">' + (E.id ? 'Редактирование' : E.generated ? 'Черновик' : 'Новый план') + '</p><h1>Мой план</h1></div>';
+    if (E.generated) h += '<p class="muted">План составлен по твоим ответам. Поменяй упражнения, подходы и повторы как удобно и нажми «Сохранить».</p>';
+    h += '<div class="card stack"><label class="mini" for="ed-name">Название плана<input id="ed-name" class="txt" type="text" maxlength="60" data-ed="name" value="' + esc(E.name) + '" placeholder="Например, Осенний план"></label></div>';
+    E.days.forEach(function (d, di) {
+      h += '<section class="card stack"><div class="row spread"><h2>День ' + (di + 1) + '</h2>' + (E.days.length > 1 ? '<button class="link danger" data-act="edDelDay" data-d="' + di + '">Удалить день</button>' : '') + '</div>' +
+        '<label class="mini" for="dn-' + di + '">Название дня<input id="dn-' + di + '" class="txt" type="text" maxlength="40" data-ed="dn" data-d="' + di + '" value="' + esc(d.name) + '" placeholder="Например, Ноги и спина"></label>' +
+        '<label class="mini" for="df-' + di + '">Упор (необязательно)<input id="df-' + di + '" class="txt" type="text" maxlength="60" data-ed="df" data-d="' + di + '" value="' + esc(d.focus) + '" placeholder="Например, квадрицепс и ягодицы"></label>';
+      d.ex.forEach(function (x, ei) {
+        var pre = 'x-' + di + '-' + ei, timed = x.u === 'сек';
+        h += '<div class="ed-ex"><label class="mini" for="' + pre + '-n">Упражнение ' + (ei + 1) + '<input id="' + pre + '-n" class="txt" type="text" maxlength="60" list="exlib" autocomplete="off" data-ed="n" data-d="' + di + '" data-e="' + ei + '" value="' + esc(x.n) + '" placeholder="Выбери из списка или впиши своё"></label>' +
+          '<div class="tri">' + numField('Подходы', pre + '-s', 's', di, ei, x.s, 'numeric') + numField(timed ? 'Секунды' : 'Повторы', pre + '-r', 'r', di, ei, x.r, 'text') + numField('Отдых, с', pre + '-rest', 'rest', di, ei, x.rest, 'numeric') + '</div>' +
+          '<div class="row"><button class="chip" data-act="edTog" data-k="w" data-d="' + di + '" data-e="' + ei + '" aria-pressed="' + (!!x.w) + '">Вес в кг</button>' +
+          '<button class="chip" data-act="edTog" data-k="u" data-d="' + di + '" data-e="' + ei + '" aria-pressed="' + timed + '">На время</button><span class="grow"></span>' +
+          '<button class="icon-btn" data-act="edMove" data-dir="-1" data-d="' + di + '" data-e="' + ei + '" aria-label="Поднять выше"' + (ei === 0 ? ' disabled' : '') + '>↑</button>' +
+          '<button class="icon-btn" data-act="edMove" data-dir="1" data-d="' + di + '" data-e="' + ei + '" aria-label="Опустить ниже"' + (ei === d.ex.length - 1 ? ' disabled' : '') + '>↓</button>' +
+          '<button class="icon-btn" data-act="edDelEx" data-d="' + di + '" data-e="' + ei + '" aria-label="Удалить упражнение">✕</button></div></div>';
+      });
+      h += '<button class="link" data-act="edAddEx" data-d="' + di + '" style="align-self:flex-start">+ Упражнение</button></section>';
+    });
+    h += '<button class="btn ghost block" data-act="edAddDay">+ Добавить день</button>';
+    h += '<datalist id="exlib">' + LIB.map(function (e) { return '<option value="' + esc(e.n) + '"></option>'; }).join('') + '</datalist>';
+    h += '<div class="wk-foot"><button class="btn block" data-act="edSave">Сохранить план</button><button class="btn danger block" data-act="edCancel">Отмена</button></div></div>';
+    return h;
+  }
+
+  function viewHistory() {
+    var logs = sortedLogs();
+    var h = '<div class="stack"><div><p class="eyebrow">Всё, что ты сделал</p><h1>Журнал</h1></div>';
+    if (!logs.length) {
+      h += '<div class="card empty"><h3>Здесь появятся твои тренировки</h3><p class="muted">Закончи первую тренировку, и она сохранится в журнале с весами, повторами и временем.</p>' +
+        '<button class="btn" data-act="start" data-p="' + state.program + '" data-d="' + ((state.dayIdx[state.program] || 0) % prog(state.program).days.length) + '">Начать тренировку</button>' +
+        '<button class="link" data-act="demo">Посмотреть на примере</button></div>';
+      return h + '</div>';
+    }
+    logs.forEach(function (l) {
+      var open = state.open === l.id;
+      h += '<section class="card log"><button class="log-top" data-act="toggleLog" data-id="' + l.id + '" aria-expanded="' + open + '"><div><strong>' + esc(l.dayName) + '</strong> ' + (l.demo ? '<span class="tag">пример</span>' : '') +
+        '<div class="small muted">' + esc(longDate(l.date)) + ' · ' + esc(l.progName) + '</div></div><div style="text-align:right"><span class="num" style="font-size:1.4rem">' + l.min + '</span><span class="small muted"> мин</span>' +
+        '<div class="small muted">' + logSets(l) + ' подх. · ' + fmt(logVolume(l)) + ' кг</div></div></button>';
+      if (open) {
+        h += '<table>' + l.ex.map(function (e) {
+          return '<tr><td>' + esc(e.n) + '</td><td>' + e.sets.map(function (s) { return (e.w ? fmt(s.w) + '×' : '') + fmt(s.r); }).join(', ') + '</td></tr>';
+        }).join('') + '</table><button class="link danger" data-act="delLog" data-id="' + l.id + '">Удалить запись</button>';
+      }
+      h += '</section>';
+    });
+    if (state.logs.some(function (l) { return l.demo; })) h += '<button class="btn ghost block" data-act="clearDemo">Убрать примеры</button>';
+    return h + '</div>';
+  }
+
+  function exerciseNames() {
+    var seen = {}, list = [];
+    sortedLogs().forEach(function (l) { l.ex.forEach(function (e) { if (e.w && !seen[e.n] && e.sets.some(function (s) { return s.w > 0; })) { seen[e.n] = 1; list.push(e.n); } }); });
+    return list;
+  }
+  function viewProgress() {
+    var h = '<div class="stack"><div><p class="eyebrow">Динамика</p><h1>Прогресс</h1></div>';
+    if (!state.logs.length && !state.weights.length) {
+      h += '<div class="card empty"><h3>Пока нечего показывать</h3><p class="muted">Графики строятся по журналу тренировок и записям веса. После двух тренировок появятся первые линии.</p><button class="btn" data-act="demo">Показать на примере</button></div>';
+      return h + '</div>';
+    }
+    var mon = monday(new Date()), weeks = [];
+    for (var i = 7; i >= 0; i--) {
+      var s = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() - i * 7), e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + 7);
+      var a = dateKey(s), b = dateKey(e);
+      weeks.push({ l: s.getDate() + '.' + pad(s.getMonth() + 1), v: state.logs.filter(function (l) { return l.date >= a && l.date < b; }).length });
+    }
+    var cut = dateKey(new Date(Date.now() - 30 * 86400000));
+    var m30 = state.logs.filter(function (l) { return l.date >= cut; });
+    var vol30 = 0; m30.forEach(function (l) { vol30 += logVolume(l); });
+    h += '<div class="stats"><div class="stat"><span class="num">' + m30.length + '</span><span class="small muted">тренировок за 30 дней</span></div>' +
+      '<div class="stat"><span class="num">' + (vol30 >= 1000 ? fmt(vol30 / 1000) + ' т' : fmt(vol30)) + '</span><span class="small muted">общий тоннаж</span></div>' +
+      '<div class="stat"><span class="num">' + (m30.length ? Math.round(m30.reduce(function (a, l) { return a + l.min; }, 0) / m30.length) : '—') + '</span><span class="small muted">мин в среднем</span></div></div>';
+    h += '<div class="card stack"><div class="row spread"><h3>Тренировок по неделям</h3><span class="small muted">пунктир — цель</span></div>' + barChart(weeks, state.target) + '</div>';
+    var names = exerciseNames();
+    if (names.length) {
+      var sel = names.indexOf(state.exSel) >= 0 ? state.exSel : names[0];
+      var pts = [];
+      sortedLogs().slice().reverse().forEach(function (l) {
+        l.ex.forEach(function (e) { if (e.n === sel) { var mx = 0; e.sets.forEach(function (s) { if (s.w > mx) mx = s.w; }); if (mx) pts.push({ l: shortDate(l.date), v: mx }); } });
+      });
+      h += '<div class="card stack"><h3>Рабочий вес</h3><label class="sr" for="exsel">Упражнение</label><select id="exsel" class="sel" data-act="exSel">' +
+        names.map(function (n) { return '<option' + (n === sel ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select>' +
+        lineChart(pts, 'кг', 'Максимальный вес в упражнении ' + sel) + '</div>';
+    }
+    var wp = state.weights.map(function (w) { return { l: shortDate(w.d), v: w.v }; });
+    h += '<div class="card stack"><h3>Вес тела</h3>' + (wp.length ? lineChart(wp, 'кг', 'Вес тела') : '<p class="muted small">Запиши вес на вкладке «Сегодня», и здесь появится график.</p>') + '</div>';
+    if (state.logs.some(function (l) { return l.demo; })) h += '<p class="small muted">В графиках учтены примерные данные. Их можно убрать в журнале.</p>';
+    return h + '</div>';
+  }
+
+  function render() {
+    var t = state.tab;
+    if ((t === 'editor' && !state.editor) || (t !== 'editor' && t !== 'generate' && t !== 'programs' && t !== 'history' && t !== 'progress' && t !== 'today')) t = 'programs';
+    state.tab = t;
+    var v = t === 'editor' ? viewEditor() : t === 'generate' ? viewGenerate() : t === 'programs' ? viewPrograms() : t === 'history' ? viewHistory() : t === 'progress' ? viewProgress() : viewToday();
+    $('#app').innerHTML = v;
+    var navT = (t === 'editor' || t === 'generate') ? 'programs' : t;
+    document.querySelectorAll('.tab').forEach(function (b) { if (b.dataset.t === navT) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    renderWorkout();
+  }
+
+  /* ---------- Тренировка ---------- */
+  function lastOf(name) {
+    var logs = sortedLogs();
+    for (var i = 0; i < logs.length; i++) {
+      for (var j = 0; j < logs[i].ex.length; j++) {
+        var e = logs[i].ex[j];
+        if (e.n === name && e.sets.length) {
+          var mx = 0; e.sets.forEach(function (s) { if (s.w > mx) mx = s.w; });
+          return { w: mx, txt: e.sets.map(function (s) { return (e.w ? fmt(s.w) + '×' : '') + fmt(s.r); }).join(', ') };
+        }
+      }
+    }
+    return null;
+  }
+  function startWorkout(pid, di) {
+    if (state.draft) { state.tab = 'today'; renderWorkout(); return; }
+    var p = prog(pid), d = p.days[di];
+    state.draft = {
+      prog: pid, day: di, start: Date.now(),
+      ex: d.ex.map(function (e) {
+        var last = lastOf(e.n), sets = [];
+        for (var i = 0; i < e.s; i++) sets.push({ w: e.w && last && last.w ? String(last.w).replace('.', ',') : '', r: '', done: false });
+        return { n: e.n, u: e.u || 'повт', w: e.w, r: e.r, rest: e.rest, s0: e.s, sets: sets };
+      })
+    };
+    save(); render(); requestWake();
+    var wk = $('#workout'); if (wk) wk.scrollTop = 0;
+  }
+  function setHtml(e, ei, s, si) {
+    var id = ei + '-' + si;
+    return '<div class="set' + (s.done ? ' done' : '') + '" data-e="' + ei + '" data-s="' + si + '"><span class="sn">' + (si + 1) + '</span>' +
+      (e.w ? '<label class="fld fld-w"><span class="sr">Вес, кг, подход ' + (si + 1) + '</span><input id="w-' + id + '" type="text" inputmode="decimal" data-k="w" value="' + esc(s.w) + '" placeholder="0"><i>кг</i></label>' : '') +
+      '<label class="fld"><span class="sr">' + (e.u === 'сек' ? 'Секунды' : 'Повторы') + ', подход ' + (si + 1) + '</span><input id="r-' + id + '" type="text" inputmode="numeric" data-k="r" value="' + esc(s.r) + '" placeholder="' + esc(firstNum(e.r)) + '"><i>' + esc(e.u) + '</i></label>' +
+      '<button class="chk" data-act="done" aria-pressed="' + s.done + '" aria-label="Подход ' + (si + 1) + ' выполнен">' + CHECK + '</button></div>';
+  }
+  function exHtml(e, ei) {
+    var last = lastOf(e.n);
+    return '<section class="ex"><div class="ex-top"><h3>' + esc(e.n) + '</h3><span class="small muted">' + e.s0 + ' × ' + esc(e.r) + (e.u === 'сек' ? ' сек' : '') + ' · отдых ' + e.rest + ' с</span></div>' +
+      (last ? '<p class="prev">Прошлый раз: ' + esc(last.txt) + '</p>' : '') +
+      '<div class="sets">' + e.sets.map(function (s, si) { return setHtml(e, ei, s, si); }).join('') + '</div>' +
+      '<button class="link" data-act="addSet" data-e="' + ei + '" style="align-self:flex-start">+ Подход</button></section>';
+  }
+  function renderWorkout() {
+    var root = $('#workout'), d = state.draft;
+    if (!d) { root.hidden = true; document.body.classList.remove('lock'); stopRest(); return; }
+    var top = root.scrollTop, p = prog(d.prog), day = p.days[d.day];
+    root.hidden = false; document.body.classList.add('lock');
+    root.innerHTML = '<header class="wk-head"><div class="wk-head-in"><div style="min-width:0"><p class="eyebrow">' + esc(p.name) + '</p><h3>' + esc(day.name) + ' · ' + esc(day.focus) + '</h3></div>' +
+      '<div style="text-align:right"><span class="num clock" id="clock">' + clock(Date.now() - d.start) + '</span><div><button class="link" data-act="hide" style="padding:0;min-height:28px">Свернуть</button></div></div></div></header>' +
+      '<div class="wk-in">' + d.ex.map(exHtml).join('') +
+      '<div class="wk-foot"><button class="btn block" data-act="finish">Завершить тренировку</button><button class="btn danger block" data-act="cancel" id="cancelBtn">Отменить тренировку</button></div></div>';
+    root.scrollTop = top;
+    updateRest();
+  }
+
+  /* ---------- Таймер отдыха ---------- */
+  var rest = null, restTimer = null, ac = null, wake = null;
+  function ensureAudio() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) {} }
+  function beep() {
+    try {
+      ensureAudio(); if (!ac) return;
+      [0, 0.22].forEach(function (t) {
+        var o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = 880; g.gain.value = 0.15;
+        o.connect(g); g.connect(ac.destination); o.start(ac.currentTime + t); o.stop(ac.currentTime + t + 0.15);
+      });
+    } catch (e) {}
+    try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e2) {}
+  }
+  function requestWake() { try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { wake = w; }, function () {}); } catch (e) {} }
+  function releaseWake() { try { if (wake) wake.release(); } catch (e) {} wake = null; }
+  function startRest(sec) {
+    rest = { end: Date.now() + sec * 1000, total: sec, fired: false };
+    if (!restTimer) restTimer = setInterval(tick, 250);
+    updateRest();
+  }
+  function stopRest() { rest = null; if (restTimer) { clearInterval(restTimer); restTimer = null; } var r = $('#rest'); if (r) r.remove(); }
+  function updateRest() {
+    var host = $('#workout'), el = $('#rest');
+    if (!rest || !state.draft || host.hidden) { if (el) el.remove(); return; }
+    if (!el) {
+      el = document.createElement('div'); el.id = 'rest'; el.setAttribute('role', 'timer');
+      el.innerHTML = '<div class="row spread"><div><span class="eyebrow" id="restLabel" style="color:inherit;opacity:.7">Отдых</span><div class="num big" id="restTime">0:00</div></div>' +
+        '<div class="row"><button class="btn" data-act="restAdd" data-n="-15" aria-label="Минус 15 секунд">−15</button><button class="btn" data-act="restAdd" data-n="15" aria-label="Плюс 15 секунд">+15</button><button class="btn" data-act="skipRest">Пропустить</button></div></div>' +
+        '<div class="meter"><div id="restBar"></div></div>';
+      document.body.appendChild(el);
+    }
+    tick();
+  }
+  function tick() {
+    var cl = $('#clock'); if (cl && state.draft) cl.textContent = clock(Date.now() - state.draft.start);
+    if (!rest) return;
+    var left = rest.end - Date.now(), el = $('#rest'); if (!el) return;
+    var t = $('#restTime'), bar = $('#restBar');
+    if (left <= 0) {
+      t.textContent = 'Готово'; $('#restLabel').textContent = 'Отдых закончен'; el.classList.add('over'); bar.style.transform = 'scaleX(1)';
+      if (!rest.fired) { rest.fired = true; beep(); setTimeout(function () { if (rest && rest.fired) stopRest(); }, 6000); }
+    } else {
+      t.textContent = Math.floor(left / 60000) + ':' + pad(Math.floor(left / 1000) % 60); $('#restLabel').textContent = 'Отдых'; el.classList.remove('over');
+      bar.style.transform = 'scaleX(' + Math.max(0, left / (rest.total * 1000)) + ')';
+    }
+  }
+
+  /* ---------- Действия ---------- */
+  var toastT = null;
+  function toast(msg) {
+    var t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT);
+    toastT = setTimeout(function () { t.hidden = true; }, 2600);
+  }
+  var armed = null;
+  function confirmTwice(btn, label, fn) {
+    if (armed && armed.btn === btn) { clearTimeout(armed.t); armed = null; fn(); return; }
+    if (armed) { clearTimeout(armed.t); armed.btn.textContent = armed.old; }
+    var old = btn.textContent; btn.textContent = label;
+    armed = { btn: btn, old: old, t: setTimeout(function () { btn.textContent = old; armed = null; }, 3500) };
+  }
+  function finish() {
+    var d = state.draft; if (!d) return;
+    var p = prog(d.prog), day = p.days[d.day];
+    var ex = d.ex.map(function (e) {
+      return { n: e.n, w: e.w, sets: e.sets.filter(function (s) { return s.done; }).map(function (s) { return { w: e.w ? num(s.w) : 0, r: num(s.r) || num(firstNum(e.r)) }; }) };
+    }).filter(function (e) { return e.sets.length; });
+    if (!ex.length) { toast('Отметь хотя бы один подход галочкой'); return; }
+    state.logs.push({ id: Date.now(), date: dateKey(new Date()), prog: p.id, progName: p.name, dayName: day.name + ' · ' + day.focus, min: Math.max(1, Math.round((Date.now() - d.start) / 60000)), ex: ex });
+    state.dayIdx[p.id] = (d.day + 1) % p.days.length;
+    state.draft = null; state.tab = 'today'; save(); stopRest(); releaseWake(); render(); window.scrollTo(0, 0);
+    toast('Тренировка сохранена');
+  }
+  function demo() {
+    var p = prog('full'), out = [], base = { 'Приседания с гантелью': 16, 'Жим гантелей лёжа': 14, 'Тяга гантели в наклоне': 14, 'Жим гантелей сидя': 10, 'Румынская тяга с гантелями': 18, 'Тяга верхнего блока': 40, 'Выпады назад': 10, 'Гоблет-приседания': 18, 'Ягодичный мостик': 20, 'Подъём гантелей в стороны': 6 };
+    var seq = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0], now = new Date();
+    for (var i = 0; i < seq.length; i++) {
+      var dt = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (seq.length - 1 - i) * 3 - 1), day = p.days[seq[i]], step = Math.floor(i / 3);
+      out.push({ id: dt.getTime() + i, demo: true, date: dateKey(dt), prog: p.id, progName: p.name, dayName: day.name + ' · ' + day.focus, min: 48 + (i % 4) * 4,
+        ex: day.ex.map(function (e) {
+          var w = e.w ? (base[e.n] || 10) + step * 2 : 0, sets = [];
+          for (var k = 0; k < e.s; k++) sets.push({ w: w, r: e.u === 'сек' ? 30 + step * 5 : Math.max(6, +firstNum(e.r) - (k === e.s - 1 ? 1 : 0)) });
+          return { n: e.n, w: e.w, sets: sets };
+        }) });
+    }
+    state.logs = state.logs.concat(out);
+    if (!state.weights.length) for (var j = 0; j < 6; j++) { var wd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (5 - j) * 6); state.weights.push({ d: dateKey(wd), v: Math.round((74.2 - j * 0.45) * 10) / 10, demo: true }); }
+    save(); render(); toast('Добавлены примеры. Их можно убрать в журнале.');
+  }
+
+  function focusId(id) { setTimeout(function () { var el = document.getElementById(id); if (el) el.focus(); }, 0); }
+  function focusSel(sel) { setTimeout(function () { var el = document.querySelector(sel); if (el && !el.disabled) el.focus(); }, 0); }
+  function saveEditor() {
+    var E = state.editor; if (!E) return;
+    var days = E.days.map(function (d, i) {
+      var ex = d.ex.filter(function (x) { return String(x.n).trim(); }).map(function (x) {
+        var o = { n: String(x.n).trim(), s: clampN(x.s, 1, 10, 3), r: String(x.r).trim() || (x.u === 'сек' ? '40' : '10'), rest: clampN(x.rest, 0, 600, 60), w: x.w ? 1 : 0 };
+        if (x.u === 'сек') o.u = 'сек';
+        return o;
+      });
+      return { name: String(d.name).trim() || 'День ' + (i + 1), focus: String(d.focus || '').trim(), ex: ex };
+    }).filter(function (d) { return d.ex.length; });
+    if (!days.length) { toast('Добавь хотя бы одно упражнение с названием'); return; }
+    var id = E.id || 'c' + Date.now();
+    var plan = { id: id, custom: true, name: String(E.name).trim() || 'Мой план', level: 'Свой', per: days.length, about: E.about || 'Свой план тренировок.', days: days };
+    var found = false;
+    state.custom = state.custom.map(function (c) { if (c.id === id) { found = true; return plan; } return c; });
+    if (!found) state.custom.push(plan);
+    state.program = id; state.dayIdx[id] = 0; state.editor = null; state.tab = 'programs';
+    save(); render(); window.scrollTo(0, 0); toast('План сохранён и выбран активным');
+  }
+
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-act]'); if (!b || b.tagName === 'SELECT') return;
+    var a = b.dataset.act;
+    if (a === 'tab') { state.tab = b.dataset.t; state.open = null; render(); window.scrollTo(0, 0); }
+    else if (a === 'start') { startWorkout(b.dataset.p, +b.dataset.d); }
+    else if (a === 'resume') { renderWorkout(); }
+    else if (a === 'hide') { $('#workout').hidden = true; document.body.classList.remove('lock'); var r = $('#rest'); if (r) r.remove(); window.scrollTo(0, 0); }
+    else if (a === 'pick') { state.program = b.dataset.p; save(); render(); toast('Программа выбрана'); }
+    else if (a === 'target') { state.target = +b.dataset.n; save(); render(); }
+    else if (a === 'saveWeight') {
+      var v = num($('#bw').value); if (v < 20 || v > 400) { toast('Введи вес от 20 до 400 кг'); return; }
+      var k = dateKey(new Date()); state.weights = state.weights.filter(function (w) { return w.d !== k; }); state.weights.push({ d: k, v: v });
+      state.weights.sort(function (x, y) { return x.d < y.d ? -1 : 1; }); save(); render(); toast('Вес записан');
+    }
+    else if (a === 'toggleLog') { var id = +b.dataset.id; state.open = state.open === id ? null : id; render(); }
+    else if (a === 'delLog') { var did = +b.dataset.id; confirmTwice(b, 'Точно удалить?', function () { state.logs = state.logs.filter(function (l) { return l.id !== did; }); state.open = null; save(); render(); toast('Запись удалена'); }); }
+    else if (a === 'demo') { demo(); }
+    else if (a === 'clearDemo') { state.logs = state.logs.filter(function (l) { return !l.demo; }); state.weights = state.weights.filter(function (w) { return !w.demo; }); save(); render(); toast('Примеры убраны'); }
+    else if (a === 'addSet') {
+      var e = state.draft.ex[+b.dataset.e], prev = e.sets[e.sets.length - 1];
+      e.sets.push({ w: prev ? prev.w : '', r: '', done: false }); save(); renderWorkout();
+    }
+    else if (a === 'done') {
+      ensureAudio();
+      var row = b.closest('.set'), ei = +row.dataset.e, si = +row.dataset.s, ex = state.draft.ex[ei], s = ex.sets[si];
+      s.done = !s.done;
+      if (s.done && !s.r) { s.r = firstNum(ex.r); var ri = $('input[data-k="r"]', row); if (ri) ri.value = s.r; }
+      row.classList.toggle('done', s.done); b.setAttribute('aria-pressed', s.done); save();
+      var lastEx = ei === state.draft.ex.length - 1, lastSet = si === ex.sets.length - 1;
+      if (s.done && !(lastEx && lastSet)) startRest(ex.rest); else if (!s.done) stopRest();
+    }
+    else if (a === 'restAdd') { if (rest) { rest.end += +b.dataset.n * 1000; rest.total = Math.max(5, rest.total + +b.dataset.n); rest.fired = false; var o = $('#rest'); if (o) o.classList.remove('over'); tick(); } }
+    else if (a === 'skipRest') { stopRest(); }
+    else if (a === 'gen') { state.tab = 'generate'; save(); render(); window.scrollTo(0, 0); }
+    else if (a === 'genSet') { state.gen[b.dataset.k] = b.dataset.k === 'days' ? +b.dataset.v : b.dataset.v; save(); render(); }
+    else if (a === 'genRun') { state.editor = toEditor(genPlan(state.gen), null); state.editor.generated = true; state.tab = 'editor'; save(); render(); window.scrollTo(0, 0); toast('План составлен. Проверь и сохрани'); }
+    else if (a === 'newPlan') { state.editor = { id: null, name: '', about: '', days: [{ name: 'День 1', focus: '', ex: [{ n: '', s: '3', r: '10', rest: '75', w: 1, u: '' }] }] }; state.tab = 'editor'; save(); render(); window.scrollTo(0, 0); }
+    else if (a === 'editPlan' || a === 'copyPlan') {
+      var src = prog(b.dataset.p); state.editor = toEditor(src, a === 'editPlan' ? src.id : null);
+      if (a === 'copyPlan') state.editor.name = src.name + ' (копия)';
+      state.tab = 'editor'; save(); render(); window.scrollTo(0, 0);
+    }
+    else if (a === 'delPlan') {
+      var pid = b.dataset.p;
+      if (state.draft && state.draft.prog === pid) { toast('Сначала закончи или отмени текущую тренировку'); return; }
+      confirmTwice(b, 'Точно удалить?', function () { state.custom = state.custom.filter(function (c) { return c.id !== pid; }); if (state.program === pid) state.program = 'full'; save(); render(); toast('План удалён'); });
+    }
+    else if (a === 'resumeEd') { state.tab = 'editor'; render(); window.scrollTo(0, 0); }
+    else if (a === 'dropEd') { confirmTwice(b, 'Точно удалить?', function () { state.editor = null; save(); render(); }); }
+    else if (a === 'edAddDay') { var E1 = state.editor; E1.days.push({ name: 'День ' + (E1.days.length + 1), focus: '', ex: [{ n: '', s: '3', r: '10', rest: '75', w: 1, u: '' }] }); save(); render(); focusId('dn-' + (E1.days.length - 1)); }
+    else if (a === 'edDelDay') { var di1 = +b.dataset.d; confirmTwice(b, 'Точно удалить день?', function () { state.editor.days.splice(di1, 1); save(); render(); }); }
+    else if (a === 'edAddEx') { var di2 = +b.dataset.d, D2 = state.editor.days[di2]; D2.ex.push({ n: '', s: '3', r: '10', rest: '75', w: 1, u: '' }); save(); render(); focusId('x-' + di2 + '-' + (D2.ex.length - 1) + '-n'); }
+    else if (a === 'edDelEx') { var di3 = +b.dataset.d, xi3 = +b.dataset.e; state.editor.days[di3].ex.splice(xi3, 1); save(); render(); }
+    else if (a === 'edMove') {
+      var di4 = +b.dataset.d, xi4 = +b.dataset.e, to4 = xi4 + (+b.dataset.dir), L4 = state.editor.days[di4].ex;
+      if (to4 >= 0 && to4 < L4.length) { var tmp = L4[xi4]; L4[xi4] = L4[to4]; L4[to4] = tmp; save(); render(); focusSel('[data-act="edMove"][data-d="' + di4 + '"][data-e="' + to4 + '"][data-dir="' + b.dataset.dir + '"]'); }
+    }
+    else if (a === 'edTog') {
+      var X5 = state.editor.days[+b.dataset.d].ex[+b.dataset.e];
+      if (b.dataset.k === 'w') X5.w = X5.w ? 0 : 1;
+      else { X5.u = X5.u === 'сек' ? '' : 'сек'; X5.r = X5.u === 'сек' ? '40' : '10'; }
+      save(); render();
+    }
+    else if (a === 'edSave') { saveEditor(); }
+    else if (a === 'edCancel') { confirmTwice(b, 'Точно отменить? Изменения пропадут', function () { state.editor = null; state.tab = 'programs'; save(); render(); window.scrollTo(0, 0); }); }
+    else if (a === 'finish') { finish(); }
+    else if (a === 'cancel') { confirmTwice(b, 'Точно отменить? Данные пропадут', function () { state.draft = null; save(); stopRest(); releaseWake(); render(); toast('Тренировка отменена'); }); }
+  });
+  document.addEventListener('change', function (ev) {
+    var t = ev.target;
+    if (t.dataset && t.dataset.act === 'exSel') { state.exSel = t.value; render(); return; }
+    if (t.dataset && t.dataset.ed === 'n' && state.editor) {
+      var f = libFind(t.value);
+      if (f) {
+        var X = state.editor.days[+t.dataset.d].ex[+t.dataset.e];
+        X.n = f.n; X.w = f.w ? 1 : 0; X.u = f.u || ''; X.s = '3'; X.r = f.u ? '40' : f.w ? '10' : '12'; X.rest = String(f.u ? 45 : f.w ? 75 : 60);
+        save(); render();
+      }
+    }
+  });
+  document.addEventListener('input', function (ev) {
+    var t = ev.target, ed = t.dataset && t.dataset.ed;
+    if (ed && state.editor) {
+      var E = state.editor, di = +t.dataset.d, xi = +t.dataset.e;
+      if (ed === 'name') E.name = t.value;
+      else if (ed === 'dn') E.days[di].name = t.value;
+      else if (ed === 'df') E.days[di].focus = t.value;
+      else E.days[di].ex[xi][ed] = t.value;
+      save(); return;
+    }
+    var k = t.dataset && t.dataset.k; if (!k || !state.draft) return;
+    var row = t.closest('.set'); if (!row) return;
+    state.draft.ex[+row.dataset.e].sets[+row.dataset.s][k] = t.value; save();
+  });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { if (state.draft) requestWake(); tick(); } });
+  setInterval(function () { var cl = $('#clock'); if (cl && state.draft) cl.textContent = clock(Date.now() - state.draft.start); }, 1000);
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+	"appId": "app.fittrainer",
+	"appName": "Фитнес-тренер",
+	"webDir": "www",
+	"backgroundColor": "#14181F",
+	"android": {
+		"allowMixedContent": false,
+		"adjustMarginsForEdgeToEdge": "force"
+	}
+}
